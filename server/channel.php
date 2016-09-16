@@ -1,6 +1,6 @@
 <?php
 require('cget.php');
-$data = _cget('http://www.lavaradio.com/api/radio.listChannelPrograms.json?channel_id='.$_GET['channel_id']);
+$data = _cget('http://www.lavaradio.com/api/radio.listChannelPrograms.json?channel_id='.$_GET['channel_id'], true);
 $result=json_decode($data, true);
 function rp($ori) {
     return htmlspecialchars($ori,ENT_COMPAT);
@@ -21,7 +21,11 @@ function rp($ori) {
                 $url = 'http://www.lavaradio.com/api/play.playProgramNew.json?program_id='.$value['program_id'];
              ?>
             <listItemLockup onselect="playMusicList('<?php echo $url;?>')">
-               <title><?php echo rp($value['program_name']);?></title>
+               <title><?php
+                    if(ord(substr($value['program_name'],0,1))<32)
+                        echo substr($value['program_name'], 1);
+                    else echo $value['program_name'];
+                ?></title>
                <relatedContent>
                   <lockup>
                      <img src="<?php echo $value['pic_url'];?>" width="857" height="482" />
