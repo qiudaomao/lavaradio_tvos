@@ -2,6 +2,7 @@
   "images" : [
     {
       "idiom" : "tv",
+      "filename" : "lava_bg.png",
       "scale" : "1x"
     }
   ],
