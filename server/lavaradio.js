@@ -86,7 +86,8 @@ function pushDoc(document, loading) {
 
 App.onLaunch = function(options) {
     //baseURL = "http://localhost/appletv/";//options.BASEURL;
-    baseURL = "http://lava.fuzhuo.me/";//options.BASEURL;
+	var l = options.location;
+    baseURL = l.substr(0,l.lastIndexOf('/')+1);
     console.log("zfu base URL is " + baseURL);
     player = new Player();
     musicListURL = "";
