@@ -14,35 +14,35 @@ function rp($ori) {
       </banner>
       <list>
          <section>
-         <?php
-            foreach($channel['data'] as $key=>$value) {
-         ?> 
+<?php
+foreach($channel['data'] as $key=>$value) {
+?>
             <listItemLockup>
                <title><?php echo $value['radio_name'];?></title>
                <decorationLabel><?php echo count($value['channels']); ?></decorationLabel>
                <relatedContent>
                    <grid>
                        <section>
-                   <?php
-                       foreach($value['channels'] as $channel_key=>$channel_value) {
-                   ?>
-                            <lockup onselect="getDocument('channel.php?channel_id=<?php echo $channel_value['channel_id']?>')">
+<?php
+    foreach($value['channels'] as $channel_key=>$channel_value) {
+?>
+                            <lockup alwaysShowTitles="true" onselect="getDocument('channel.php?channel_id=<?php echo $channel_value['channel_id']?>')">
                                <img src="<?php echo $channel_value['pic_url'];?>" width="250" height="376" />
                                <overlay>
                                 <title><?php echo rp($channel_value['channel_name']);?></title>
                                </overlay>
                                 <title><?php echo rp($channel_value['channel_name']);?></title>
                             </lockup>
-                    <?php
-                       }
-                    ?>
+<?php
+    }
+?>
                          </section>
                    </grid>
                </relatedContent>
             </listItemLockup>
-         <?php
-            }
-         ?>
+<?php
+}
+?>
          </section>
       </list>
    </catalogTemplate>
