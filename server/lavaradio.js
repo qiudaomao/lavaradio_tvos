@@ -1,97 +1,159 @@
+/*
+ * zfu github.com/fuzhuo
+ * https://fuzhuo.me
+ */
 var baseURL;
-var player;
-var musicListURL;
-
-function log(str) {
-    console.log("js log:"+str);
-}
-
-function playMusicList(music_list_url) {
-    console.log('play music url:'+music_list_url);
-    if (musicListURL == music_list_url) {
-        player.present();
-    } else {
-        musicListURL = music_list_url;
-        console.log("new play list: "+music_list_url);
-        player.stop();
-        getHTTP(music_list_url, function(c){
-            var videoList = new Playlist();
-            var result = JSON.parse(c)['data']['songs'];
-            for (var i=0; i<result.length; i++) {
-                var item = new MediaItem('audio', result[i]['audio_url']);
-                item.title = result[i]['song_name']+' - '+result[i]['artists_name'];
-                item.artworkImageURL = result[i]['pic_url'];
-                item.description = result[i]['artists_name']+"《"+result[i]['salbums_name']+"》";
-                item.subtitle = result[i]['artists_name']+"《"+result[i]['salbums_name']+"》";
-                videoList.push(item);
-                console.log("add songs:"+result[i]['song_name']);
-            }
-            player.playlist = videoList;
-            player.play();
-            console.log("play finished");
-        });
+App.onLaunch = function(options) {
+    var l = options.location;
+    baseURL = l.substr(0,l.lastIndexOf('/')+1);
+    console.log("Base URL is " + baseURL);
+    const scripts = [
+        "home.xml",
+        "channel.xml"
+    ].map(
+        moduleName => `${baseURL}${moduleName}.js`
+    );
+    
+    const loadingDocument = createLoadingDocument("MediaHub加载中..");
+    navigationDocument.pushDocument(loadingDocument);
+    
+    for (let a of scripts) {
+        console.log("scripts[]:"+a);
     }
-}
-
-function playVideo(url,title,img_url) {
-    console.log("zfu audio url:"+url+",title:"+title+', img_url:'+img_url);
-    var singleVideo = new MediaItem('audio', url);
-    singleVideo.title = title;
-    singleVideo.artworkImageURL = img_url;
-    var videoList = new Playlist();
-    videoList.push(singleVideo);
-    var myPlayer = new Player();
-    myPlayer.playlist = videoList;
-    myPlayer.play();
-    console.log("play finish");
-}
-
-function loadingDoc() {
-    var template = '<document><loadingTemplate><activityIndicator><text>LavaRadio加载中</text></activityIndicator></loadingTemplate></document>'; 
-    var templateParser = new DOMParser();
-    var parsedTemplate = templateParser.parseFromString(template, "application/xml");
-    return parsedTemplate;
+    evaluateScripts(scripts, function(scriptsAreLoaded) {
+        if (scriptsAreLoaded) {
+            console.log("scripts are loaded");
+            showHomePage();
+        } else {
+            const alertDocument = createEvalErrorAlertDocument();
+            navigationDocument.replaceDocument(alertDocument, loadingDocument);
+            throw new EvalError("TVML application.js unable to evaluate scripts");
+        }
+    });
 }
 
 function getHTTP(url, callback) {
     var templateXHR = new XMLHttpRequest();
+    console.log("getHTTP:"+url);
     templateXHR.responseType = "document";
+    templateXHR.timeout = 10000;
     templateXHR.addEventListener("load", function() {
         callback(templateXHR.responseText);
     }, false);
-    templateXHR.open("GET", url, true);
-    templateXHR.send();
-}
-
-function getDocument(extension) {
-    var templateXHR = new XMLHttpRequest();
-    var url = baseURL + extension;
-    var loadingScreen = loadingDoc();
-    log("getDocument "+extension);
-    
-    navigationDocument.pushDocument(loadingScreen);
-    templateXHR.responseType = "document";
-    templateXHR.addEventListener("load", function() {
-        pushDoc(templateXHR.responseXML, loadingScreen);
+    templateXHR.addEventListener("timeout", function() {
+        const alertDocument = createAlertDocument("请求超时", `<![CDATA[未能成功拉取:${url}]]>`);
+        navigationDocument.pushDocument(alertDocument);
+    }, false);
+    templateXHR.addEventListener("error", function(e) {
+        const alertDocument = createAlertDocument("请求错误", `<![CDATA[未能成功拉取:${url}]]>`);
+        navigationDocument.pushDocument(alertDocument);
     }, false);
     templateXHR.open("GET", url, true);
     templateXHR.send();
 }
 
-function pushDoc(document, loading) {
-    var currentDoc = getActiveDocument();
-    navigationDocument.replaceDocument(document, currentDoc);
-    //navigationDocument.pushDocument(document);
+function postHTTP(url, postData, callback) {
+    var templateXHR = new XMLHttpRequest();
+    console.log("getHTTP:"+url);
+    templateXHR.responseType = "document";
+    templateXHR.timeout = 10000;
+    templateXHR.addEventListener("load", function() {
+        callback(templateXHR.responseText);
+    }, false);
+    templateXHR.addEventListener("timeout", function() {
+        const alertDocument = createAlertDocument("请求超时", `<![CDATA[未能成功拉取:${url}]]>`);
+        navigationDocument.pushDocument(alertDocument);
+    }, false);
+    templateXHR.addEventListener("error", function(e) {
+        const alertDocument = createAlertDocument("请求错误", `<![CDATA[未能成功拉取:${url}]]>`);
+        navigationDocument.pushDocument(alertDocument);
+    }, false);
+    templateXHR.open("GET", url, true);
+    templateXHR.send(postData);
 }
 
-App.onLaunch = function(options) {
-    //baseURL = "http://localhost/appletv/";//options.BASEURL;
-	var l = options.location;
-    baseURL = l.substr(0,l.lastIndexOf('/')+1);
-    console.log("zfu base URL is " + baseURL);
-    player = new Player();
-    musicListURL = "";
-    //loadingDoc();
-    var templateURL = "home.php";
-    getDocument(templateURL);
+/**
+ * Convenience function to create a TVML loading document with a specified title.
+ */
+function createLoadingDocument(title) {
+    // If no title has been specified, fall back to "Loading...".
+    title = title || "LazyCat加载中...";
+
+    const template = `<?xml version="1.0" encoding="UTF-8" ?>
+        <document>
+            <loadingTemplate>
+                <activityIndicator>
+                    <title>${title}</title>
+                </activityIndicator>
+            </loadingTemplate>
+        </document>
+    `;
+    return new DOMParser().parseFromString(template, "application/xml");
 }
+
+/**
+ * Convenience function to create a TVML alert document with a title and description.
+ */
+function createAlertDocument(title, description) {
+    const template = `<?xml version="1.0" encoding="UTF-8" ?>
+        <document>
+            <alertTemplate>
+                <title>${title}</title>
+                <description>${description}</description>
+            </alertTemplate>
+        </document>
+    `;
+    return new DOMParser().parseFromString(template, "application/xml");
+}
+
+/**
+ * Convenience function to create a TVML alert document with a title and description.
+ */
+function createDescriptiveAlertDocument(title, description) {
+    const template = `<?xml version="1.0" encoding="UTF-8" ?>
+        <document>
+            <descriptiveAlertTemplate>
+                <title>${title}</title>
+                <description>${description}</description>
+            </descriptiveAlertTemplate>
+        </document>
+    `;
+    return new DOMParser().parseFromString(template, "application/xml");
+}
+
+/**
+ * Convenience function to create a TVML alert for failed evaluateScripts.
+ */
+function createEvalErrorAlertDocument() {
+    const title = "Evaluate Scripts Error";
+    const description = [
+        "There was an error attempting to evaluate the external JavaScript files.",
+        "Please check your network connection and try again later."
+    ].join("\n\n");
+    return createAlertDocument(title, description);
+}
+
+/**
+ * Convenience function to create a TVML alert for a failed XMLHttpRequest.
+ */
+function createLoadErrorAlertDocument(url, xhr) {
+    const title = (xhr.status) ? `Fetch Error ${xhr.status}` : "Fetch Error";
+    const description = `Could not load document:\n${url}\n(${xhr.statusText})`;
+    return createAlertDocument(title, description);
+}
+
+function padLeft(nr, n, str){
+    return Array(n-String(nr).length+1).join(str||'0')+nr;
+}
+
+function time2str(time) {
+    var a = parseInt(time);
+    var h = parseInt(a/60/60);
+    a-=h*60*60;
+    var m = parseInt(a/60);
+    a-=m*60;
+    var s = a;
+    if (h>0) return ''+padLeft(h,2)+":"+padLeft(m,2)+":"+padLeft(s,2);
+    else return ''+padLeft(m,2)+":"+padLeft(s,2);
+}
+
