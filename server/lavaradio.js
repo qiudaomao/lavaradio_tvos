@@ -14,7 +14,7 @@ App.onLaunch = function(options) {
         moduleName => `${baseURL}${moduleName}.js`
     );
     
-    const loadingDocument = createLoadingDocument("MediaHub加载中..");
+    const loadingDocument = createLoadingDocument("Lava加载中..");
     navigationDocument.pushDocument(loadingDocument);
     
     for (let a of scripts) {
@@ -23,7 +23,7 @@ App.onLaunch = function(options) {
     evaluateScripts(scripts, function(scriptsAreLoaded) {
         if (scriptsAreLoaded) {
             console.log("scripts are loaded");
-            showHomePage();
+            showLavaHome();
         } else {
             const alertDocument = createEvalErrorAlertDocument();
             navigationDocument.replaceDocument(alertDocument, loadingDocument);
